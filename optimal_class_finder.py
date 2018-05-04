@@ -3,27 +3,33 @@ from os import path
 from glob import glob 
 
 class_count = 100
-class_dict = {}
+CLASS_LENGTH = 8 # For CU Boulder, tags are of the format ANTH1000, 4 letters and 4 digits
 
-birds = glob(path.join('.',"*.{}".format('pdf')))
+requirements = glob(path.join('.',"*.{}".format('pdf')))
 
-def scrape_pdf(req):
-	catalog = read_pdf(req, pages="all", multiple_tables=True)
+def scrape_pdf(req):  
+	catalog = read_pdf(req, pages="all", multiple_tables=True, lattice=True) # Lattice required to read boundries
 	for page in range(len(catalog)):
-		for i in range(3, len(catalog[page])):
-			tag = catalog[page][0][i] + catalog[page][1][i]
-			if tag not in class_dict:
-				class_dict[tag] = req[:-4]
-			else:
-				class_dict[tag] = class_dict.get(tag) + ", " + req[:-4]
+		for i in range(len(catalog[page])):
+			try:
+				tag = catalog[page][0][i] + catalog[page][1][i] # Class tag
+				if (type(tag) is str) and (len(tag) == CLASS_LENGTH): #
+					new_tag = tag + "-" + catalog[page][2][i] # Actual Class Name
+					if new_tag not in class_dict:
+						class_dict[new_tag] = req[:-4] # Removes the .pdf
+					else:
+						class_dict[new_tag] = class_dict.get(new_tag) + ", " + req[:-4]
+			except: # Skips header rows and empty rows
+				continue
 			
-for bird in birds:
-	scrape_pdf(bird[2:])
+class_dict = {}
+for req in requirements:
+	scrape_pdf(req[2:])
 
 listed = 0
-for stone in sorted(class_dict, key=lambda stone:len(class_dict[stone].split()), reverse=True):
+for course in sorted(class_dict, key=lambda course:len(class_dict[course].split()), reverse=True):
 	if listed < class_count:
-		print("Class: " + stone + " | Requirements Met: " + class_dict[stone])
+		print("Class: " + course + " | Requirements Met: " + class_dict[course])
 		listed += 1
 	else:
 		break
